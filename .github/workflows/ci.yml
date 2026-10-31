@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest  # Apple Silicon, which is what the compiler targets.
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitize: ["", "address,undefined"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GoogleTest
+        run: brew install googletest
+      - name: Build
+        run: |
+          cmake -S . -B build -DMINIC_SANITIZE="${{ matrix.sanitize }}"
+          cmake --build build -j
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+      - name: End-to-end tests
+        run: python3 tests/run_tests.py build/minic
